@@ -1,0 +1,8 @@
+[build]
+  command = "cp templates/index.html index.html"
+  publish = "."
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

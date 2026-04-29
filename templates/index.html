@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SignSync AI — Real-time ASL to speech interface powered by MediaPipe and machine learning.">
+    <title>SignSync AI — Real-Time ASL Interface</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <!-- Animated background -->
+    <div class="app-background">
+        <div class="bg-orb orb-1"></div>
+        <div class="bg-orb orb-2"></div>
+        <div class="bg-orb orb-3"></div>
+    </div>
+
+    <div class="app-wrapper">
+
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-brand">
+                <div class="brand-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/>
+                        <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>SignSync <span class="accent">AI</span></h1>
+                    <p class="tagline">Real-time ASL Recognition</p>
+                </div>
+            </div>
+            <div id="model-badge" class="model-badge" title="Model info">
+                <span class="badge-dot"></span>
+                <span id="badge-label">Loading model...</span>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <main class="main-content">
+
+            <!-- ── Left: Video ───────────────────────────────────── -->
+            <section class="video-section">
+                <div class="video-container" id="video-container">
+                    <video class="input_video" autoplay playsinline></video>
+                    <canvas class="output_canvas" width="640" height="480"></canvas>
+                    <div id="status-overlay" class="status-overlay"></div>
+
+                    <!-- Confidence ring overlay -->
+                    <div class="confidence-ring-wrapper" id="conf-ring-wrapper">
+                        <svg class="conf-ring" viewBox="0 0 80 80">
+                            <circle class="conf-ring-bg" cx="40" cy="40" r="34"/>
+                            <circle class="conf-ring-fill" id="conf-circle" cx="40" cy="40" r="34"
+                                    stroke-dasharray="213.6" stroke-dashoffset="213.6"/>
+                        </svg>
+                        <span class="conf-pct" id="conf-pct">0%</span>
+                    </div>
+                </div>
+
+                <!-- Detected sign + hold progress -->
+                <div class="sign-row">
+                    <div class="detected-sign-chip">
+                        <span class="sign-label">Detecting:</span>
+                        <strong id="current-sign">—</strong>
+                    </div>
+                    <div class="hold-bar-wrapper">
+                        <div class="hold-bar" id="progress-bar"></div>
+                    </div>
+                    <span class="hold-hint">Hold to confirm</span>
+                </div>
+
+                <!-- Gesture History -->
+                <div class="gesture-history-section">
+                    <span class="section-label">Recent</span>
+                    <div class="gesture-history" id="gesture-history"></div>
+                </div>
+            </section>
+
+            <!-- ── Right: Controls ──────────────────────────────── -->
+            <section class="controls-section">
+
+                <!-- Transcript Board -->
+                <div class="transcript-board">
+                    <div class="transcript-header">
+                        <h2>Transcript</h2>
+                        <button class="icon-btn" id="copy-btn" title="Copy to clipboard">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                    </div>
+                    <div class="transcript-box" id="transcript-box">
+                        <span id="transcript-text"></span><span class="cursor">_</span>
+                    </div>
+                </div>
+
+                <!-- Word Suggestions -->
+                <div class="suggestions-section">
+                    <span class="section-label">Suggestions</span>
+                    <div class="suggestions-row" id="suggestions-row">
+                        <span class="suggestion-placeholder">Start signing to see suggestions...</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="actions">
+                    <button class="btn speak-btn" id="speak-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                        Speak
+                    </button>
+                    <button class="btn backspace-btn" id="backspace-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+                        Backspace
+                    </button>
+                    <button class="btn clear-btn" id="clear-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        Clear
+                    </button>
+                </div>
+
+                <!-- Settings Panel -->
+                <div class="settings-panel">
+                    <div class="settings-title">⚙ Settings</div>
+
+                    <label class="toggle-control">
+                        <input type="checkbox" id="auto-space-toggle" checked>
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                        <span>SPACE gesture enabled</span>
+                    </label>
+
+                    <label class="toggle-control">
+                        <input type="checkbox" id="auto-speak-toggle">
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                        <span>Auto-speak on word complete</span>
+                    </label>
+
+                    <div class="slider-control">
+                        <label for="lockon-slider">
+                            Hold Duration: <strong id="lockon-val">1.5s</strong>
+                        </label>
+                        <input type="range" id="lockon-slider" min="500" max="3000" step="100" value="1500">
+                    </div>
+
+                    <div class="slider-control">
+                        <label for="conf-slider">
+                            Min Confidence: <strong id="conf-val">55%</strong>
+                        </label>
+                        <input type="range" id="conf-slider" min="30" max="95" step="5" value="55">
+                    </div>
+                </div>
+
+                <!-- Model Info Card -->
+                <div class="model-info-card" id="model-info-card">
+                    <div class="model-info-row"><span>Model</span><strong id="mi-type">—</strong></div>
+                    <div class="model-info-row"><span>Accuracy</span><strong id="mi-acc">—</strong></div>
+                    <div class="model-info-row"><span>Classes</span><strong id="mi-classes">—</strong></div>
+                    <div class="model-info-row"><span>Features</span><strong id="mi-feats">—</strong></div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
