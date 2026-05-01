@@ -1,9 +1,9 @@
 // ─── DOM Elements ──────────────────────────────────────────────────────────
 // Change this to your Render backend URL once deployed.
 // For local development, it falls back to the current host.
-const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-    ? '' 
-    : 'https://YOUR_RENDER_APP_NAME.onrender.com';
+// Use relative URLs by default. This works for both local development and Render
+// as long as the frontend is served by the Flask app.
+const BACKEND_URL = '';
 
 const videoEl        = document.querySelector('.input_video');
 const canvasEl       = document.querySelector('.output_canvas');
@@ -316,7 +316,8 @@ async function loadModelInfo() {
         document.getElementById('mi-acc').textContent     = meta.test_accuracy ? `${meta.test_accuracy}%` : '—';
         document.getElementById('mi-classes').textContent = meta.num_classes   || '—';
         document.getElementById('mi-feats').textContent   = meta.num_features  || '—';
-    } catch {
+    } catch (err) {
+        console.error('[SignSync] Failed to load model info:', err);
         badgeLabelEl.textContent = 'Model not trained';
         document.getElementById('model-badge').style.background = 'rgba(255,71,87,0.12)';
         document.getElementById('model-badge').style.color      = 'var(--danger)';

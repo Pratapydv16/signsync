@@ -1,4 +1,5 @@
 import logging
+import os
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from model_utils import load_model, load_model_metadata, predict_landmarks, PredictionSmoother
@@ -25,16 +26,24 @@ def ensure_model_loaded():
     if model is not None:
         return True
     
+    log.info("Attempting to load model files...")
+    
+    # Check if files exist first
+    if not os.path.exists('model.p'):
+        log.error("CRITICAL: model.p not found!")
+        return False
+        
     m, l = load_model('model.p')
     mt   = load_model_metadata('model_meta.json')
     
     if m:
         model, le, meta = m, l, mt
-        log.info(f"Model loaded — type: {meta.get('model_type','?')}  "
-                 f"accuracy: {meta.get('test_accuracy','?')}%  "
-                 f"classes: {meta.get('num_classes','?')}")
+        log.info(f"✅ Model loaded successfully — type: {meta.get('model_type','?')} "
+                 f"accuracy: {meta.get('test_accuracy','?')}%")
         return True
-    return False
+    else:
+        log.error("❌ Failed to load model from model.p (check pickle compatibility)")
+        return False
 
 # Initial attempt
 ensure_model_loaded()
@@ -91,4 +100,8 @@ def reset_smoother():
 
 # ─── Run ─────────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    import os
+    # Use PORT environment variable for Render compatibility
+    port = int(os.environ.get('PORT', 5000))
+    log.info(f"Starting dev server on port {port}...")
+    app.run(debug=True, host='0.0.0.0', port=port)
