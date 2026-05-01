@@ -15,16 +15,29 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 # ─── Load Model ───────────────────────────────────────────────────────────────
-model, le = load_model('model.p')
-meta      = load_model_metadata('model_meta.json')
-smoother  = PredictionSmoother(window=5)
+model = None
+le    = None
+meta  = {}
+smoother = PredictionSmoother(window=5)
 
-if model:
-    log.info(f"Model loaded — type: {meta.get('model_type','?')}  "
-             f"accuracy: {meta.get('test_accuracy','?')}%  "
-             f"classes: {meta.get('num_classes','?')}")
-else:
-    log.warning("Model NOT loaded. Train the model first (python train_classifier.py).")
+def ensure_model_loaded():
+    global model, le, meta
+    if model is not None:
+        return True
+    
+    m, l = load_model('model.p')
+    mt   = load_model_metadata('model_meta.json')
+    
+    if m:
+        model, le, meta = m, l, mt
+        log.info(f"Model loaded — type: {meta.get('model_type','?')}  "
+                 f"accuracy: {meta.get('test_accuracy','?')}%  "
+                 f"classes: {meta.get('num_classes','?')}")
+        return True
+    return False
+
+# Initial attempt
+ensure_model_loaded()
 
 
 # ─── Routes ──────────────────────────────────────────────────────────────────
@@ -36,6 +49,7 @@ def index():
 @app.route('/model-info')
 def model_info():
     """Return model metadata for the UI."""
+    ensure_model_loaded()
     if not meta:
         return jsonify({'error': 'Model metadata not found.'}), 404
     return jsonify(meta)
@@ -43,7 +57,7 @@ def model_info():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    if not model:
+    if not ensure_model_loaded():
         return jsonify({'error': 'Model not loaded. Run train_classifier.py first.'}), 500
 
     data = request.get_json(silent=True)
