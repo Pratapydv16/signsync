@@ -2,6 +2,7 @@ import os
 import sys
 import pickle
 import random
+import math
 
 # Workaround for mediapipe/tensorflow protobuf version conflict:
 # Prevent mediapipe from optionally importing tensorflow docs, which breaks on protobuf>=4
@@ -16,10 +17,9 @@ mp_hands = mp.solutions.hands
 hands_detector = mp_hands.Hands(static_image_mode=True, min_detection_confidence=0.3)
 
 # Fallback paths to find dataset images
-if os.path.exists('./kaggle_data/processed_combine_asl_dataset'):
-    DATA_DIR = './kaggle_data/processed_combine_asl_dataset'
-elif os.path.exists('./data'):
+if os.path.exists('./data'):
     DATA_DIR = './data'
+
 else:
     print("[ERROR] Could not find dataset folder ('./kaggle_data/...' or './data').")
     sys.exit(1)
@@ -32,7 +32,8 @@ def extract_features(hand_landmarks):
     Features:
       - 63 values: (x - xmin, y - ymin, z) per landmark  → raw spatial
       - 10 finger angle features                           → geometric
-    Total: 73 features
+      - 21 joint distance features                         → geometric
+    Total: 94 features
     """
     lm = hand_landmarks.landmark
     xs = [p.x for p in lm]
@@ -53,18 +54,9 @@ def extract_features(hand_landmarks):
         data_aux.append(p.z)          # depth is already wrist-relative in MediaPipe
 
     # Finger angle features (tip → knuckle vectors)
-    # Landmark indices: wrist=0, thumb=[1-4], index=[5-8], middle=[9-12], ring=[13-16], pinky=[17-20]
     tip_pairs = [
-        (4, 2),   # thumb tip → thumb MCP
-        (8, 6),   # index tip → index MCP
-        (12, 10), # middle tip → middle MCP
-        (16, 14), # ring tip → ring MCP
-        (20, 18), # pinky tip → pinky MCP
-        (8, 5),   # index tip → index base
-        (12, 9),  # middle tip → middle base
-        (16, 13), # ring tip → ring base
-        (20, 17), # pinky tip → pinky base
-        (4, 0),   # thumb tip → wrist
+        (4, 2), (8, 6), (12, 10), (16, 14), (20, 18),
+        (8, 5), (12, 9), (16, 13), (20, 17), (4, 0)
     ]
     for (a, b) in tip_pairs:
         vx = lm[a].x - lm[b].x
@@ -72,7 +64,28 @@ def extract_features(hand_landmarks):
         angle = np.degrees(np.arctan2(vy, vx))
         data_aux.append(angle / 180.0)  # normalise to [-1, 1]
 
-    return data_aux   # 73 features
+    # Helper for 2D normalized distance
+    def get_dist(a, b):
+        dx = (lm[a].x - lm[b].x) / xrange
+        dy = (lm[a].y - lm[b].y) / yrange
+        return math.hypot(dx, dy)
+
+    # 21 New geometric distance features
+    dist_pairs = [
+        # Tip-to-Tip (7)
+        (4, 8), (4, 12), (4, 16), (4, 20),
+        (8, 12), (12, 16), (16, 20),
+        # Tip-to-Wrist (5)
+        (4, 0), (8, 0), (12, 0), (16, 0), (20, 0),
+        # Tip-to-Palm/MiddleMCP (5)
+        (4, 9), (8, 9), (12, 9), (16, 9), (20, 9),
+        # Thumb to PIPs (4)
+        (4, 6), (4, 10), (4, 14), (4, 18)
+    ]
+    for (a, b) in dist_pairs:
+        data_aux.append(get_dist(a, b))
+
+    return data_aux   # 94 features
 
 
 def augment_image(img):

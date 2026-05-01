@@ -38,7 +38,7 @@ def extract_features_from_landmarks(landmarks, num_features=42):
 
     data_aux = []
 
-    if num_features == 73:
+    if num_features in [73, 94]:
         xrange = max(xs) - xmin + 1e-6
         yrange = max(ys) - ymin + 1e-6
 
@@ -58,6 +58,27 @@ def extract_features_from_landmarks(landmarks, num_features=42):
             vy = landmarks[a]['y'] - landmarks[b]['y']
             angle = np.degrees(np.arctan2(vy, vx))
             data_aux.append(angle / 180.0)
+
+        if num_features == 94:
+            import math
+            def get_dist(a, b):
+                dx = (landmarks[a]['x'] - landmarks[b]['x']) / xrange
+                dy = (landmarks[a]['y'] - landmarks[b]['y']) / yrange
+                return math.hypot(dx, dy)
+
+            dist_pairs = [
+                # Tip-to-Tip (7)
+                (4, 8), (4, 12), (4, 16), (4, 20),
+                (8, 12), (12, 16), (16, 20),
+                # Tip-to-Wrist (5)
+                (4, 0), (8, 0), (12, 0), (16, 0), (20, 0),
+                # Tip-to-Palm/MiddleMCP (5)
+                (4, 9), (8, 9), (12, 9), (16, 9), (20, 9),
+                # Thumb to PIPs (4)
+                (4, 6), (4, 10), (4, 14), (4, 18)
+            ]
+            for (a, b) in dist_pairs:
+                data_aux.append(get_dist(a, b))
     else:
         for lm in landmarks:
             data_aux.append(lm['x'] - xmin)

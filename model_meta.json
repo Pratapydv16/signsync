@@ -1,8 +1,8 @@
 {
   "model_type": "RandomForest",
   "test_accuracy": 100.0,
-  "cv_accuracy_mean": 99.74,
-  "cv_accuracy_std": 0.33,
+  "cv_accuracy_mean": 99.76,
+  "cv_accuracy_std": 0.3,
   "classes": [
     "A",
     "B",
@@ -34,9 +34,9 @@
     "Z"
   ],
   "num_classes": 28,
-  "num_features": 73,
+  "num_features": 94,
   "num_samples": 16039,
-  "trained_at": "2026-04-29T16:17:13.987607",
+  "trained_at": "2026-05-01T14:42:38.031075",
   "hyperparameters": {
     "base": "RandomForestClassifier",
     "n_estimators": 300,
