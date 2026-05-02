@@ -1,12 +1,11 @@
 {
   "model_type": "RandomForest",
-  "test_accuracy": 100.0,
-  "cv_accuracy_mean": 99.76,
-  "cv_accuracy_std": 0.3,
+  "test_accuracy": 99.25,
+  "cv_accuracy_mean": 96.23,
+  "cv_accuracy_std": 2.32,
   "classes": [
     "A",
     "B",
-    "BACKSPACE",
     "C",
     "D",
     "E",
@@ -24,7 +23,6 @@
     "Q",
     "R",
     "S",
-    "SPACE",
     "T",
     "U",
     "V",
@@ -33,10 +31,10 @@
     "Y",
     "Z"
   ],
-  "num_classes": 28,
+  "num_classes": 26,
   "num_features": 94,
-  "num_samples": 16039,
-  "trained_at": "2026-05-01T14:42:38.031075",
+  "num_samples": 153197,
+  "trained_at": "2026-05-02T01:21:12.347214",
   "hyperparameters": {
     "base": "RandomForestClassifier",
     "n_estimators": 300,
