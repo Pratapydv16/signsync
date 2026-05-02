@@ -52,8 +52,8 @@ print(f"\n[INFO] Train: {len(x_train)} | Test: {len(x_test)}")
 print("\n[TRAINING] RandomForestClassifier ...")
 
 model = RandomForestClassifier(
-    n_estimators=300,
-    max_depth=None,
+    n_estimators=80,
+    max_depth=15,
     min_samples_split=2,
     min_samples_leaf=1,
     max_features='sqrt',
@@ -133,7 +133,8 @@ meta = {
     "trained_at":       datetime.now().isoformat(),
     "hyperparameters": {
         "base": "RandomForestClassifier",
-        "n_estimators": 300,
+        "n_estimators": 80,
+        "max_depth": 15,
         "max_features": "sqrt",
         "class_weight": "balanced"
     }

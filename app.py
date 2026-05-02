@@ -1,5 +1,6 @@
 import logging
 import os
+import gc
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from model_utils import load_model, load_model_metadata, predict_landmarks, PredictionSmoother
@@ -40,9 +41,13 @@ def ensure_model_loaded():
         model, le, meta = m, l, mt
         log.info(f"✅ Model loaded successfully — type: {meta.get('model_type','?')} "
                  f"accuracy: {meta.get('test_accuracy','?')}%")
+        
+        # Explicitly collect garbage after loading a large pickle to free memory spikes
+        gc.collect()
         return True
     else:
         log.error("❌ Failed to load model from model.p (check pickle compatibility)")
+        gc.collect()
         return False
 
 # Initial attempt
