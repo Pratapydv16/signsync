@@ -2,6 +2,7 @@ import pickle
 import json
 import os
 import numpy as np
+import math
 from collections import Counter
 
 # ─── Load Model ──────────────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ def extract_features_from_landmarks(landmarks, num_features=42):
             (4, 2), (8, 6), (12, 10), (16, 14), (20, 18),
             (8, 5), (12, 9), (16, 13), (20, 17), (4, 0)
         ]
-        import numpy as np
+        # Angles
         for (a, b) in tip_pairs:
             vx = landmarks[a]['x'] - landmarks[b]['x']
             vy = landmarks[a]['y'] - landmarks[b]['y']
@@ -60,7 +61,6 @@ def extract_features_from_landmarks(landmarks, num_features=42):
             data_aux.append(angle / 180.0)
 
         if num_features == 94:
-            import math
             def get_dist(a, b):
                 dx = (landmarks[a]['x'] - landmarks[b]['x']) / xrange
                 dy = (landmarks[a]['y'] - landmarks[b]['y']) / yrange

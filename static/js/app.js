@@ -39,6 +39,8 @@ let isFetching       = false;
 let lastHandPresent  = false;
 let gestureHistory   = [];
 let confidenceThreshold = 0.55;
+let lastFetchTime    = 0;
+const FETCH_THROTTLE_MS = 100; // 10Hz maximum request rate
 
 const LOCK_ON_MS     = () => parseInt(lockonSlider.value);
 const COOLDOWN_MS    = 1800;
@@ -148,7 +150,13 @@ function onResults(results) {
         drawLandmarks(ctx, landmarks, { color: '#eef2ff', lineWidth: 1, radius: 4 });
 
         lastHandPresent = true;
-        if (!isFetching) sendToBackend(landmarks);
+        
+        // Throttle backend requests to FETCH_THROTTLE_MS
+        const now = Date.now();
+        if (!isFetching && (now - lastFetchTime) > FETCH_THROTTLE_MS) {
+            lastFetchTime = now;
+            sendToBackend(landmarks);
+        }
     } else {
         if (lastHandPresent) {
             // Hand just left — reset smoother on server
