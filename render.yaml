@@ -1,26 +1,12 @@
 services:
-  # ─── Backend: Flask API ──────────────────────────────────────────────────
   - type: web
-    name: signsync-api
+    name: signsync
     env: python
-    buildCommand: pip install -r requirements-prod.txt
+    plan: free
+    buildCommand: pip install -r requirements.txt
     startCommand: gunicorn --workers 1 --threads 4 --timeout 120 app:app
     envVars:
       - key: PORT
         value: 5000
       - key: PYTHON_VERSION
         value: 3.10.0
-
-  # ─── Frontend: Next.js App ──────────────────────────────────────────────
-  - type: web
-    name: signsync-ui
-    env: node
-    plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
-    envVars:
-      - key: NEXT_PUBLIC_API_URL
-        fromService:
-          name: signsync-api
-          type: web
-          property: host

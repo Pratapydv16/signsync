@@ -1,12 +1,17 @@
 import logging
 import os
 import gc
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from model_utils import load_model, load_model_metadata, predict_landmarks, PredictionSmoother
 
 # ─── App Setup ────────────────────────────────────────────────────────────────
 app = Flask(__name__)
+
+@app.route('/')
+def index():
+    """Serve the main frontend."""
+    return render_template('index.html')
 
 # Configure CORS to allow requests from the Next.js dev server
 CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}})

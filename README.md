@@ -1,11 +1,6 @@
----
-title: SignSync AI
-emoji: 🤟
-colorFrom: green
-colorTo: emerald
-sdk: docker
-pinned: false
----
-
 # SignSync AI 🤟
-Real-time Sign Language to Text conversion using Next.js and Flask.
+
+Real-time Sign Language to Text conversion powered by Flask, MediaPipe, and Scikit-Learn.
+
+## Deployment
+This project is configured for deployment on **Render** as a single Python Web Service.
