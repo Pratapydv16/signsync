@@ -12,7 +12,7 @@ WORKDIR /app
 
 # Install Python dependencies first
 COPY requirements-prod.txt .
-RUN pip3 install --no-cache-dir -r requirements-prod.txt
+RUN pip3 install --no-cache-dir -r requirements-prod.txt --break-system-packages
 
 # Install Node dependencies
 COPY package*.json ./
