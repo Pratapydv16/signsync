@@ -534,3 +534,181 @@ h1 {
 }
 .model-info-row span { color: var(--text-3); }
 .model-info-row strong { color: var(--text-1); font-weight: 500; }
+
+/* ─── Reference Button ────────────────────────────────────────────── */
+.ref-btn {
+    background: var(--surface-2);
+    color: var(--text-2);
+    border: 1px solid var(--border);
+}
+.ref-btn:hover {
+    color: var(--neon);
+    border-color: var(--border-glow);
+    background: var(--neon-dim);
+}
+
+/* ─── Modal ───────────────────────────────────────────────────────── */
+.modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    display: none;
+    place-items: center;
+    padding: 2rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.modal-overlay.active {
+    display: grid;
+    opacity: 1;
+}
+
+.modal-content {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 900px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+    animation: modalSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modalSlide {
+    from { transform: translateY(30px) scale(0.95); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.modal-header {
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.02);
+}
+.modal-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-1);
+}
+
+.modal-body {
+    padding: 2rem;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 1.25rem;
+}
+
+/* Custom Scrollbar for Modal Body */
+.modal-body::-webkit-scrollbar { width: 6px; }
+.modal-body::-webkit-scrollbar-track { background: transparent; }
+.modal-body::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 10px;
+}
+.modal-body::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+.ref-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+.ref-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    border-color: var(--neon);
+    box-shadow: 0 10px 25px rgba(0,255,204,0.15);
+}
+.ref-img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    background: #000;
+    transition: opacity 0.3s ease;
+}
+.ref-card:hover .ref-img {
+    opacity: 0.8;
+}
+.ref-label {
+    padding: 0.7rem;
+    text-align: center;
+    font-weight: 700;
+    color: var(--neon);
+    font-size: 1.3rem;
+    background: rgba(0,255,204,0.05);
+    border-top: 1px solid var(--border);
+}
+
+/* ─── Lightbox / Full Image View ─────────────────────────────────── */
+.lightbox-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(15px);
+    z-index: 2000;
+    display: none;
+    place-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    cursor: zoom-out;
+}
+.lightbox-overlay.active {
+    display: grid;
+    opacity: 1;
+}
+.lightbox-content {
+    max-width: 90vw;
+    max-height: 90vh;
+    border: 2px solid var(--neon);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 0 40px rgba(0,255,204,0.3);
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.lightbox-overlay.active .lightbox-content {
+    transform: scale(1);
+}
+.lightbox-label {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--neon);
+    text-shadow: 0 0 20px var(--neon);
+    z-index: 2100;
+}
+.lightbox-label.top {
+    top: 30px;
+}
+.lightbox-label.bottom {
+    bottom: 30px;
+}
+
+.close-modal {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: grid; place-items: center;
+    transition: all 0.2s;
+}
+.close-modal:hover {
+    background: var(--danger-dim);
+    color: var(--danger);
+    border-color: rgba(255,71,87,0.3);
+    transform: rotate(90deg);
+}
+

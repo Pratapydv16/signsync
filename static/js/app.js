@@ -5,75 +5,75 @@
 // as long as the frontend is served by the Flask app.
 const BACKEND_URL = '';
 
-const videoEl        = document.querySelector('.input_video');
-const canvasEl       = document.querySelector('.output_canvas');
-const ctx            = canvasEl.getContext('2d');
+const videoEl = document.querySelector('.input_video');
+const canvasEl = document.querySelector('.output_canvas');
+const ctx = canvasEl.getContext('2d');
 
-const currentSignEl  = document.getElementById('current-sign');
-const transcriptEl   = document.getElementById('transcript-text');
-const progressBarEl  = document.getElementById('progress-bar');
-const overlayEl      = document.getElementById('status-overlay');
-const containerEl    = document.getElementById('video-container');
-const confCircleEl   = document.getElementById('conf-circle');
-const confPctEl      = document.getElementById('conf-pct');
-const historyEl      = document.getElementById('gesture-history');
-const suggestionsEl  = document.getElementById('suggestions-row');
-const badgeLabelEl   = document.getElementById('badge-label');
-const lockonSlider   = document.getElementById('lockon-slider');
-const lockonValEl    = document.getElementById('lockon-val');
-const confSlider     = document.getElementById('conf-slider');
-const confValEl      = document.getElementById('conf-val');
-const autoSpaceToggle   = document.getElementById('auto-space-toggle');
-const autoSpeakToggle   = document.getElementById('auto-speak-toggle');
-const clearBtn       = document.getElementById('clear-btn');
-const backspaceBtn   = document.getElementById('backspace-btn');
-const speakBtn       = document.getElementById('speak-btn');
-const copyBtn        = document.getElementById('copy-btn');
+const currentSignEl = document.getElementById('current-sign');
+const transcriptEl = document.getElementById('transcript-text');
+const progressBarEl = document.getElementById('progress-bar');
+const overlayEl = document.getElementById('status-overlay');
+const containerEl = document.getElementById('video-container');
+const confCircleEl = document.getElementById('conf-circle');
+const confPctEl = document.getElementById('conf-pct');
+const historyEl = document.getElementById('gesture-history');
+const suggestionsEl = document.getElementById('suggestions-row');
+const badgeLabelEl = document.getElementById('badge-label');
+const lockonSlider = document.getElementById('lockon-slider');
+const lockonValEl = document.getElementById('lockon-val');
+const confSlider = document.getElementById('conf-slider');
+const confValEl = document.getElementById('conf-val');
+const autoSpaceToggle = document.getElementById('auto-space-toggle');
+const autoSpeakToggle = document.getElementById('auto-speak-toggle');
+const clearBtn = document.getElementById('clear-btn');
+const backspaceBtn = document.getElementById('backspace-btn');
+const speakBtn = document.getElementById('speak-btn');
+const copyBtn = document.getElementById('copy-btn');
 
 // ─── State ─────────────────────────────────────────────────────────────────
-let transcript       = '';
+let transcript = '';
 let currentPrediction = null;
-let lockOnStartTime  = null;
-let lastTriggerTime  = null;
-let isFetching       = false;
-let lastHandPresent  = false;
-let gestureHistory   = [];
+let lockOnStartTime = null;
+let lastTriggerTime = null;
+let isFetching = false;
+let lastHandPresent = false;
+let gestureHistory = [];
 let confidenceThreshold = 0.55;
-let lastFetchTime    = 0;
+let lastFetchTime = 0;
 const FETCH_THROTTLE_MS = 100; // 10Hz maximum request rate
 
-const LOCK_ON_MS     = () => parseInt(lockonSlider.value);
-const COOLDOWN_MS    = 1800;
-const HISTORY_MAX    = 8;
+const LOCK_ON_MS = () => parseInt(lockonSlider.value);
+const COOLDOWN_MS = 1800;
+const HISTORY_MAX = 8;
 const RING_CIRCUMFERENCE = 213.6; // 2 * π * 34
 
 // ─── Common Word List for Suggestions ──────────────────────────────────────
 const WORD_LIST = [
-    'HELLO','HI','YES','NO','PLEASE','THANK','SORRY','HELP','WATER',
-    'FOOD','HOME','LOVE','GOOD','BAD','STOP','GO','COME','SEE','YOU',
-    'ME','WE','HE','SHE','IT','THE','AND','BUT','FOR','WITH','FROM',
-    'ARE','CAN','WILL','WANT','NEED','HAVE','MAKE','TIME','WHAT',
-    'WHERE','WHEN','HOW','WHO','WHY','OKAY','DONE','NICE','WAIT'
+    'HELLO', 'HI', 'YES', 'NO', 'PLEASE', 'THANK', 'SORRY', 'HELP', 'WATER',
+    'FOOD', 'HOME', 'LOVE', 'GOOD', 'BAD', 'STOP', 'GO', 'COME', 'SEE', 'YOU',
+    'ME', 'WE', 'HE', 'SHE', 'IT', 'THE', 'AND', 'BUT', 'FOR', 'WITH', 'FROM',
+    'ARE', 'CAN', 'WILL', 'WANT', 'NEED', 'HAVE', 'MAKE', 'TIME', 'WHAT',
+    'WHERE', 'WHEN', 'HOW', 'WHO', 'WHY', 'OKAY', 'DONE', 'NICE', 'WAIT'
 ];
 
 // ─── Confidence Ring ───────────────────────────────────────────────────────
 function setConfidenceRing(confidence) {
-    const pct  = Math.max(0, Math.min(1, confidence));
+    const pct = Math.max(0, Math.min(1, confidence));
     const offset = RING_CIRCUMFERENCE * (1 - pct);
     confCircleEl.style.strokeDashoffset = offset;
     confPctEl.textContent = Math.round(pct * 100) + '%';
 
     // Color shift: low=orange, high=neon
-    if (pct < 0.4)       confCircleEl.style.stroke = '#ffa502';
+    if (pct < 0.4) confCircleEl.style.stroke = '#ffa502';
     else if (pct < 0.65) confCircleEl.style.stroke = '#00d4a8';
-    else                 confCircleEl.style.stroke = '#00ffcc';
+    else confCircleEl.style.stroke = '#00ffcc';
 }
 
 // ─── Suggestions ──────────────────────────────────────────────────────────
 function updateSuggestions() {
     // Get last partial word (after last space)
-    const words    = transcript.split(' ');
-    const partial  = words[words.length - 1].toUpperCase();
+    const words = transcript.split(' ');
+    const partial = words[words.length - 1].toUpperCase();
 
     if (partial.length < 1) {
         suggestionsEl.innerHTML = '<span class="suggestion-placeholder">Start signing to see suggestions...</span>';
@@ -150,7 +150,7 @@ function onResults(results) {
         drawLandmarks(ctx, landmarks, { color: '#eef2ff', lineWidth: 1, radius: 4 });
 
         lastHandPresent = true;
-        
+
         // Throttle backend requests to FETCH_THROTTLE_MS
         const now = Date.now();
         if (!isFetching && (now - lastFetchTime) > FETCH_THROTTLE_MS) {
@@ -160,7 +160,7 @@ function onResults(results) {
     } else {
         if (lastHandPresent) {
             // Hand just left — reset smoother on server
-            fetch(`${BACKEND_URL}/reset-smoother`, { method: 'POST' }).catch(() => {});
+            fetch(`${BACKEND_URL}/reset-smoother`, { method: 'POST' }).catch(() => { });
             lastHandPresent = false;
         }
         currentSignEl.textContent = '—';
@@ -214,20 +214,20 @@ function handlePrediction(letter, confidence) {
 
     // New letter detected
     if (letter !== currentPrediction) {
-        currentPrediction  = letter;
-        lockOnStartTime    = now;
+        currentPrediction = letter;
+        lockOnStartTime = now;
         currentSignEl.textContent = letter;
     }
 
     // Lock-on progress
-    const elapsed  = now - lockOnStartTime;
+    const elapsed = now - lockOnStartTime;
     const progress = Math.min((elapsed / LOCK_ON_MS()) * 100, 100);
     progressBarEl.style.width = `${progress}%`;
 
     if (elapsed >= LOCK_ON_MS()) {
         triggerAction(letter);
-        lastTriggerTime   = now;
-        lockOnStartTime   = null;
+        lastTriggerTime = now;
+        lockOnStartTime = null;
         currentPrediction = null;
     }
 }
@@ -264,11 +264,11 @@ function triggerAction(letter) {
 function speakText(text) {
     if (!text.trim()) return;
     const utterance = new SpeechSynthesisUtterance(text);
-    const voices    = speechSynthesis.getVoices();
-    const good      = voices.find(v => v.lang.includes('en') && v.name.includes('Google'));
+    const voices = speechSynthesis.getVoices();
+    const good = voices.find(v => v.lang.includes('en') && v.name.includes('Google'));
     if (good) utterance.voice = good;
-    utterance.pitch = 0.95;
-    utterance.rate  = 1;
+    utterance.pitch = 0.85;
+    utterance.rate = 0.80;
 
     // Animate transcript board
     const board = document.querySelector('.transcript-board');
@@ -315,23 +315,72 @@ confSlider.addEventListener('input', () => {
 // ─── Load Model Info ──────────────────────────────────────────────────────
 async function loadModelInfo() {
     try {
-        const res  = await fetch(`${BACKEND_URL}/model-info`);
+        const res = await fetch(`${BACKEND_URL}/model-info`);
         if (!res.ok) throw new Error('No metadata');
         const meta = await res.json();
 
-        badgeLabelEl.textContent   = `${meta.model_type} · ${meta.test_accuracy}% acc`;
-        document.getElementById('mi-type').textContent    = meta.model_type    || '—';
-        document.getElementById('mi-acc').textContent     = meta.test_accuracy ? `${meta.test_accuracy}%` : '—';
-        document.getElementById('mi-classes').textContent = meta.num_classes   || '—';
-        document.getElementById('mi-feats').textContent   = meta.num_features  || '—';
+        badgeLabelEl.textContent = `${meta.model_type} · ${meta.test_accuracy}% acc`;
+        document.getElementById('mi-type').textContent = meta.model_type || '—';
+        document.getElementById('mi-acc').textContent = meta.test_accuracy ? `${meta.test_accuracy}%` : '—';
+        document.getElementById('mi-classes').textContent = meta.num_classes || '—';
+        document.getElementById('mi-feats').textContent = meta.num_features || '—';
     } catch (err) {
         console.error('[SignSync] Failed to load model info:', err);
         badgeLabelEl.textContent = 'Model not trained';
         document.getElementById('model-badge').style.background = 'rgba(255,71,87,0.12)';
-        document.getElementById('model-badge').style.color      = 'var(--danger)';
+        document.getElementById('model-badge').style.color = 'var(--danger)';
         document.getElementById('model-badge').style.borderColor = 'rgba(255,71,87,0.3)';
-        document.querySelector('.badge-dot').style.background   = 'var(--danger)';
+        document.querySelector('.badge-dot').style.background = 'var(--danger)';
     }
 }
 
 loadModelInfo();
+
+// ─── ASL Reference Modal ──────────────────────────────────────────────────
+const openRefBtn    = document.getElementById('open-ref-btn');
+const closeRefBtn   = document.getElementById('close-ref-btn');
+const modalOverlay  = document.getElementById('modal-overlay');
+const refGrid       = document.getElementById('ref-grid');
+const lightboxOverlay = document.getElementById('lightbox-overlay');
+const lightboxImg     = document.getElementById('lightbox-img');
+const lightboxLabelBottom = document.getElementById('lightbox-label-bottom');
+
+const SIGNS = [
+    'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+    'space','del'
+];
+
+function populateReference() {
+    refGrid.innerHTML = SIGNS.map(sign => {
+        const displayLabel = sign === 'space' ? 'SPACE' : (sign === 'del' ? 'BACKSPACE' : sign);
+        return `
+            <div class="ref-card" onclick="openLightbox('${sign}', '${displayLabel}')">
+                <img src="/static/reference/${sign}.jpg" alt="Sign ${sign}" class="ref-img" loading="lazy">
+                <div class="ref-label">${displayLabel}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.openLightbox = (sign, label) => {
+    lightboxImg.src = `/static/reference/${sign}.jpg`;
+    lightboxLabelBottom.textContent = label;
+    lightboxOverlay.classList.add('active');
+};
+
+lightboxOverlay.addEventListener('click', () => {
+    lightboxOverlay.classList.remove('active');
+});
+
+openRefBtn.addEventListener('click', () => {
+    if (refGrid.children.length === 0) populateReference();
+    modalOverlay.classList.add('active');
+});
+
+closeRefBtn.addEventListener('click', () => {
+    modalOverlay.classList.remove('active');
+});
+
+modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) modalOverlay.classList.remove('active');
+});
