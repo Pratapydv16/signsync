@@ -1,13 +1,15 @@
 import logging
 import os
 import gc
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from model_utils import load_model, load_model_metadata, predict_landmarks, PredictionSmoother
 
 # ─── App Setup ────────────────────────────────────────────────────────────────
 app = Flask(__name__)
-CORS(app)
+
+# Configure CORS to allow requests from the Next.js dev server
+CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}})
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,7 +31,6 @@ def ensure_model_loaded():
     
     log.info("Attempting to load model files...")
     
-    # Check if files exist first
     if not os.path.exists('model.p'):
         log.error("CRITICAL: model.p not found!")
         return False
@@ -39,14 +40,11 @@ def ensure_model_loaded():
     
     if m:
         model, le, meta = m, l, mt
-        log.info(f"✅ Model loaded successfully — type: {meta.get('model_type','?')} "
-                 f"accuracy: {meta.get('test_accuracy','?')}%")
-        
-        # Explicitly collect garbage after loading a large pickle to free memory spikes
+        log.info(f"✅ Model loaded — type: {meta.get('model_type','?')} accuracy: {meta.get('test_accuracy','?')}%")
         gc.collect()
         return True
     else:
-        log.error("❌ Failed to load model from model.p (check pickle compatibility)")
+        log.error("❌ Failed to load model.p")
         gc.collect()
         return False
 
@@ -54,11 +52,7 @@ def ensure_model_loaded():
 ensure_model_loaded()
 
 
-# ─── Routes ──────────────────────────────────────────────────────────────────
-@app.route('/')
-def index():
-    return render_template('index.html')
-
+# ─── API Routes ───────────────────────────────────────────────────────────────
 
 @app.route('/model-info')
 def model_info():
@@ -72,22 +66,17 @@ def model_info():
 @app.route('/predict', methods=['POST'])
 def predict():
     if not ensure_model_loaded():
-        return jsonify({'error': 'Model not loaded. Run train_classifier.py first.'}), 500
+        return jsonify({'error': 'Model not loaded.'}), 500
 
     data = request.get_json(silent=True)
     if not data or 'landmarks' not in data:
-        return jsonify({'error': 'Invalid request — expected {"landmarks": [...]}'}), 400
+        return jsonify({'error': 'Invalid request'}), 400
 
     landmarks = data['landmarks']
-    if len(landmarks) != 21:
-        return jsonify({
-            'error': f'Expected 21 landmarks, got {len(landmarks)}'
-        }), 400
-
     num_feats = meta.get('num_features', 42) if meta else 42
+    
+    # Perform prediction
     prediction, confidence = predict_landmarks(model, le, landmarks, smoother=smoother, num_features=num_feats)
-
-    log.info(f"Prediction: {prediction!r:12s}  confidence: {confidence:.2%}")
 
     return jsonify({
         'prediction': prediction,
@@ -98,15 +87,13 @@ def predict():
 
 @app.route('/reset-smoother', methods=['POST'])
 def reset_smoother():
-    """Reset the prediction buffer (call when hand leaves frame)."""
+    """Reset the prediction buffer."""
     smoother.reset()
     return jsonify({'status': 'ok'})
 
 
 # ─── Run ─────────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
-    import os
-    # Use PORT environment variable for Render compatibility
     port = int(os.environ.get('PORT', 5000))
-    log.info(f"Starting dev server on port {port}...")
+    log.info(f"SignSync Backend starting on port {port}...")
     app.run(debug=True, host='0.0.0.0', port=port)

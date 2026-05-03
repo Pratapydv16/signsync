@@ -4,3 +4,15 @@ data/
 data.pickle
 *.png
 .env
+
+# Next.js
+.next/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
