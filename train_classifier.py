@@ -62,10 +62,10 @@ print(f"\n[INFO] Train: {len(x_train)} | Test: {len(x_test)}")
 print("\n[TRAINING] RandomForestClassifier ...")
 
 model = RandomForestClassifier(
-    n_estimators=150,     # Increased for better accuracy
-    max_depth=25,         # Increased depth
-    min_samples_split=2,
-    min_samples_leaf=1,
+    n_estimators=60,      # Reduced from 150
+    max_depth=12,         # Reduced from 25
+    min_samples_split=5,  # Increased to prevent over-splitting
+    min_samples_leaf=2,   # Increased to prune tree size
     max_features='sqrt',
     class_weight='balanced',
     random_state=42,
