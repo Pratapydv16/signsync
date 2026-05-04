@@ -21,7 +21,7 @@ if os.path.exists('./data'):
     DATA_DIR = './data'
 
 else:
-    print("[ERROR] Could not find dataset folder ('./kaggle_data/...' or './data').")
+    print("[ERROR] Could not find dataset folder ('./data').")
     sys.exit(1)
 
 # ─── Feature Extraction ──────────────────────────────────────────────────────
@@ -89,8 +89,26 @@ def extract_features(hand_landmarks):
 
 
 def augment_image(img):
-    """Return a list of augmented variants of the image. (Augmentation disabled for speed)"""
+    """Return a list of augmented variants of the image for better robustness."""
     variants = [img]
+    
+    # 1. Flip (Horizontal) - Helps with left/right hand variance if applicable
+    # Note: ASL is handed, but mirror images are common in webcam feeds
+    variants.append(cv2.flip(img, 1))
+    
+    # 2. Slight Rotations (-10 to 10 degrees)
+    rows, cols, _ = img.shape
+    for angle in [-10, 10]:
+        M = cv2.getRotationMatrix2D((cols/2, rows/2), angle, 1)
+        variants.append(cv2.warpAffine(img, M, (cols, rows)))
+    
+    # 3. Brightness adjustment
+    hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+    for val in [0.8, 1.2]:
+        hsv_alt = hsv.copy()
+        hsv_alt[:,:,2] = np.clip(hsv_alt[:,:,2] * val, 0, 255)
+        variants.append(cv2.cvtColor(hsv_alt, cv2.COLOR_HSV2RGB))
+        
     return variants
 
 
@@ -136,7 +154,13 @@ for i, dir_ in enumerate(directories):
             if results.multi_hand_landmarks:
                 features = extract_features(results.multi_hand_landmarks[0])
                 data.append(features)
-                labels.append(dir_)
+                
+                # Normalise labels
+                lbl = dir_
+                if lbl.lower() == 'space': lbl = 'SPACE'
+                if lbl.lower() in ['del', 'backspace']: lbl = 'BACKSPACE'
+                
+                labels.append(lbl)
                 accepted += 1
 
         # Progress

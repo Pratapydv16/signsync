@@ -21,13 +21,23 @@ data_dict = pickle.load(open('./data.pickle', 'rb'))
 data      = np.asarray(data_dict['data'])
 labels    = np.asarray(data_dict['labels'])
 
+# ─── Class Map: Normalise labels to match frontend expectations ──────────
+# Mapping from raw folder names to canonical names
+LABEL_MAP = {
+    'space': 'SPACE',
+    'del':   'BACKSPACE',
+    'BACKSPACE': 'BACKSPACE',
+    'SPACE': 'SPACE'
+}
+labels = np.array([LABEL_MAP.get(lbl, lbl) for lbl in labels])
+
 # ─── Class Filter: keep only A-Z, SPACE, BACKSPACE ───────────────────────────
 KEEP_CLASSES = set(list('ABCDEFGHIJKLMNOPQRSTUVWXYZ') + ['SPACE', 'BACKSPACE'])
 mask   = np.array([lbl in KEEP_CLASSES for lbl in labels])
 data   = data[mask]
 labels = labels[mask]
 print(f"\n[FILTER] Keeping only: {sorted(KEEP_CLASSES)}")
-print(f"[FILTER] Removed {np.sum(~mask)} digit samples. {len(data)} samples remain.")
+print(f"[FILTER] Samples filtered. {len(data)} samples remain.")
 
 print(f"\n[INFO] Dataset loaded  : {len(data)} samples, {data.shape[1]} features")
 print(f"[INFO] Classes found   : {sorted(set(labels))}")
@@ -52,8 +62,8 @@ print(f"\n[INFO] Train: {len(x_train)} | Test: {len(x_test)}")
 print("\n[TRAINING] RandomForestClassifier ...")
 
 model = RandomForestClassifier(
-    n_estimators=80,
-    max_depth=15,
+    n_estimators=150,     # Increased for better accuracy
+    max_depth=25,         # Increased depth
     min_samples_split=2,
     min_samples_leaf=1,
     max_features='sqrt',
